@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOPOST - Anonymous Posts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Bricolage Grotesque", sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .post-form {
+            background-color: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+        
+        .post-form.expanded {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+        
+        .post-form h2 {
+            margin-bottom: 15px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .form-toggle {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            resize: vertical;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #fff;
+        }
+        
+        .image-upload {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .image-upload label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #333;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-btn:hover {
+            background-color: #444;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            margin-top: 15px;
+            display: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .char-count {
+            text-align: right;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .char-count.near-limit {
+            color: #ff9900;
+        }
+        
+        .char-count.over-limit {
+            color: #ff3333;
+        }
+        
+        button {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            background-color: #ddd;
+            transform: translateY(-2px);
+        }
+        
+        button i {
+            margin-right: 8px;
+        }
+        
+        .posts-container {
+            margin-top: 30px;
+        }
+        
+        .post {
+            background-color: #fff;
+            color: #000;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .post-content {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .post-image {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        
+        .author {
+            font-style: italic;
+        }
+        
+        .time-ago {
+            color: #888;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+        
+        .action-btn:hover {
+            color: #000;
+            background: none;
+            transform: none;
+        }
+        
+        .action-btn i {
+            margin-right: 5px;
+        }
+        
+        .liked {
+            color: #ff3366;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .filter-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            align-items: center;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            background: #222;
+            color: #fff;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        
+        .sort-options select {
+            padding: 10px;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #333;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #fff;
+            color: #000;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .expiry-timer {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .post-form, .post {
+                padding: 15px;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .search-box {
+                margin-right: 0;
+                margin-bottom: 10px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ANOPOST</h1>
+            <p class="tagline">Share your thoughts anonymously • Posts disappear after 48 hours</p>
+        </header>
+        
+        <div class="post-form" id="post-form">
+            <h2>
+                Create a new post
+                <button class="form-toggle" id="form-toggle">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </h2>
+            <form id="create-post-form">
+                <textarea id="post-content" placeholder="What's on your mind? (Max 500 characters)" maxlength="500" required></textarea>
+                <div class="char-count" id="char-count">0/500</div>
+                
+                <div class="image-upload">
+                    <input type="file" id="post-image" accept="image/*" hidden>
+                    <label for="post-image" class="upload-btn">
+                        <i class="fas fa-image"></i> Select Image
+                    </label>
+                    <button type="button" class="remove-image" id="remove-image">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <img id="image-preview" class="image-preview" alt="Image preview">
+                </div>
+                
+                <button type="submit" id="submit-btn">
+                    <i class="fas fa-paper-plane"></i> Post Anonymously
+                </button>
+            </form>
+        </div>
+        
+        <div class="filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search posts...">
+            </div>
+            <div class="sort-options">
+                <select id="sort-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="most-liked">Most Liked</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="posts-container" id="posts-container">
+            <div class="empty-state" id="empty-state">
+                <p><i class="fas fa-comment-slash"></i></p>
+                <p>No posts yet. Be the first to share something!</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>ANOPOST &copy; 2023 | All posts are anonymous and automatically deleted after 48 hours</p>
+        </footer>
+    </div>
+
+    <div class="notification" id="notification">
+        <span id="notification-text"></span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the application
+            initApp();
+        });
+        
+        function initApp() {
+            // Check if posts exist in localStorage and load them
+            loadPosts();
+            
+            // Set up form submission
+            const postForm = document.getElementById('create-post-form');
+            postForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                createPost();
+            });
+            
+            // Set up form toggle
+            const formToggle = document.getElementById('form-toggle');
+            const postFormContainer = document.getElementById('post-form');
+            formToggle.addEventListener('click', function() {
+                postFormContainer.classList.toggle('expanded');
+                const icon = formToggle.querySelector('i');
+                if (postFormContainer.classList.contains('expanded')) {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            });
+            
+            // Set up image preview
+            const imageInput = document.getElementById('post-image');
+            const imagePreview = document.getElementById('image-preview');
+            const removeImageBtn = document.getElementById('remove-image');
+            
+            imageInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    // Check if file is an image
+                    if (!file.type.match('image.*')) {
+                        showNotification('Please select an image file');
+                        return;
+                    }
+                    
+                    // Check file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showNotification('Image must be less than 5MB');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    
+                    reader.addEventListener('load', function() {
+                        imagePreview.src = reader.result;
+                        imagePreview.style.display = 'block';
+                        removeImageBtn.style.display = 'block';
+                    });
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.style.display = 'none';
+                    removeImageBtn.style.display = 'none';
+                }
+            });
+            
+            // Remove image button
+            removeImageBtn.addEventListener('click', function() {
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
+                removeImageBtn.style.display = 'none';
+            });
+            
+            // Character count for textarea
+            const textarea = document.getElementById('post-content');
+            const charCount = document.getElementById('char-count');
+            
+            textarea.addEventListener('input', function() {
+                const length = this.value.length;
+                charCount.textContent = `${length}/500`;
+                
+                if (length > 450) {
+                    charCount.classList.add('near-limit');
+                } else {
+                    charCount.classList.remove('near-limit');
+                }
+                
+                if (length >= 500) {
+                    charCount.classList.add('over-limit');
+                } else {
+                    charCount.classList.remove('over-limit');
+                }
+            });
+            
+            // Search functionality
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', function() {
+                loadPosts(this.value);
+            });
+            
+            // Sort functionality
+            const sortSelect = document.getElementById('sort-select');
+            sortSelect.addEventListener('change', function() {
+                loadPosts(searchInput.value, this.value);
+            });
+            
+            // Set up interval to check for expired posts every minute
+            setInterval(checkExpiredPosts, 60000);
+        }
+        
+        function createPost() {
+            const contentInput = document.getElementById('post-content');
+            const imageInput = document.getElementById('post-image');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            const content = contentInput.value.trim();
+            if (!content) {
+                showNotification('Please write something to post');
+                return;
+            }
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+            
+            // Create post object
+            const post = {
+                id: Date.now(),
+                content: content,
+                timestamp: new Date().toISOString(),
+                author: 'Anonymous',
+                likes: 0,
+                liked: false,
+                expiry: Date.now() + (48 * 60 * 60 * 1000) // 48 hours from now
+            };
+            
+            // Handle image if selected
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    post.image = e.target.result;
+                    savePost(post);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                savePost(post);
+            }
+        }
+        
+        function savePost(post) {
+            // Get existing posts from localStorage
+            const posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            
+            // Add new post
+            posts.unshift(post);
+            
+            // Save back to localStorage
+            localStorage.setItem('anopost_posts', JSON.stringify(posts));
+            
+            // Clear form
+            document.getElementById('create-post-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('remove-image').style.display = 'none';
+            document.getElementById('char-count').textContent = '0/500';
+            document.getElementById('char-count').classList.remove('near-limit', 'over-limit');
+            
+            // Re-enable button
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Post Anonymously';
+            
+            // Show success message
+            showNotification('Your post has been shared anonymously!');
+            
+            // Reload posts
+            loadPosts();
+            
+            // Pulse effect on new post
+            const newPostElement = document.querySelector(`[data-id="${post.id}"]`);
+            if (newPostElement) {
+                newPostElement.classList.add('pulse');
+                setTimeout(() => {
+                    newPostElement.classList.remove('pulse');
+                }, 500);
+            }
+        }
+        
+        function loadPosts(searchTerm = '', sortBy = 'newest') {
+            const postsContainer = document.getElementById('posts-container');
+            const emptyState = document.getElementById('empty-state');
+            let posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            
+            // Filter posts by search term if provided
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                posts = posts.filter(post => 
+                    post.content.toLowerCase().includes(term)
+                );
+            }
+            
+            // Sort posts based on selection
+            switch(sortBy) {
+                case 'oldest':
+                    posts.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    break;
+                case 'most-liked':
+                    posts.sort((a, b) => b.likes - a.likes);
+                    break;
+                case 'newest':
+                default:
+                    posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    break;
+            }
+            
+            // Clear posts container
+            postsContainer.innerHTML = '';
+            
+            if (posts.length === 0) {
+                if (searchTerm) {
+                    emptyState.innerHTML = `
+                        <p><i class="fas fa-search"></i></p>
+                        <p>No posts found matching "${searchTerm}"</p>
+                    `;
+                } else {
+                    emptyState.innerHTML = `
+                        <p><i class="fas fa-comment-slash"></i></p>
+                        <p>No posts yet. Be the first to share something!</p>
+                    `;
+                }
+                postsContainer.appendChild(emptyState);
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            // Create HTML for each post
+            posts.forEach(post => {
+                const timeRemaining = post.expiry - Date.now();
+                const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
+                
+                const postElement = document.createElement('div');
+                postElement.className = 'post';
+                postElement.dataset.id = post.id;
+                
+                let postHTML = `
+                    <div class="post-content">${escapeHTML(post.content)}</div>
+                `;
+                
+                if (post.image) {
+                    postHTML += `<img src="${post.image}" class="post-image" alt="Post image">`;
+                }
+                
+                postHTML += `
+                    <div class="post-meta">
+                        <span class="author">${post.author}</span>
+                        <span class="time-ago">${timeAgo(new Date(post.timestamp))}</span>
+                    </div>
+                    <div class="expiry-timer">Expires in ${hoursRemaining} hours</div>
+                    <div class="post-actions">
+                        <button class="action-btn like-btn ${post.liked ? 'liked' : ''}" data-id="${post.id}">
+                            <i class="fas fa-heart"></i> <span class="like-count">${post.likes}</span>
+                        </button>
+                        <button class="action-btn copy-btn" data-content="${escapeHTML(post.content)}">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                `;
+                
+                postElement.innerHTML = postHTML;
+                postsContainer.appendChild(postElement);
+            });
+            
+            // Add event listeners for like buttons
+            document.querySelectorAll('.like-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const postId = parseInt(this.dataset.id);
+                    likePost(postId);
+                });
+            });
+            
+            // Add event listeners for copy buttons
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const content = this.dataset.content;
+                    navigator.clipboard.writeText(content).then(() => {
+                        showNotification('Copied to clipboard!');
+                    });
+                });
+            });
+        }
+        
+        function likePost(postId) {
+            const posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            const postIndex = posts.findIndex(post => post.id === postId);
+            
+            if (postIndex !== -1) {
+                const post = posts[postIndex];
+                
+                if (post.liked) {
+                    post.likes--;
+                    post.liked = false;
+                } else {
+                    post.likes++;
+                    post.liked = true;
+                }
+                
+                localStorage.setItem('anopost_posts', JSON.stringify(posts));
+                
+                // Update the like button and count
+                const likeBtn = document.querySelector(`.like-btn[data-id="${postId}"]`);
+                const likeCount = likeBtn.querySelector('.like-count');
+                
+                likeCount.textContent = post.likes;
+                
+                if (post.liked) {
+                    likeBtn.classList.add('liked');
+                } else {
+                    likeBtn.classList.remove('liked');
+                }
+                
+                // Pulse effect on like count
+                likeCount.classList.add('pulse');
+                setTimeout(() => {
+                    likeCount.classList.remove('pulse');
+                }, 300);
+            }
+        }
+        
+        function checkExpiredPosts() {
+            const posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            const now = Date.now();
+            const unexpiredPosts = posts.filter(post => post.expiry > now);
+            
+            if (unexpiredPosts.length !== posts.length) {
+                localStorage.setItem('anopost_posts', JSON.stringify(unexpiredPosts));
+                loadPosts();
+                
+                const expiredCount = posts.length - unexpiredPosts.length;
+                if (expiredCount > 0) {
+                    showNotification(`${expiredCount} post(s) have been deleted as they expired`);
+                }
+            }
+        }
+        
+        function timeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'just now';
+            }
+            
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) {
+                return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) {
+                return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) {
+                return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInMonths = Math.floor(diffInDays / 30);
+            if (diffInMonths < 12) {
+                return `${diffInMonths} month${diffInMonths !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInYears = Math.floor(diffInMonths / 12);
+            return `${diffInYears} year${diffInYears !== 1 ? 's' : ''} ago`;
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notification-text');
+            
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
