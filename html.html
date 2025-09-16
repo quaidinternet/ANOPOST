@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOPOST - Anonymous Posts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Bricolage Grotesque", sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .post-form {
+            background-color: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .post-form h2 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+            resize: vertical;
+            font-size: 1rem;
+        }
+        
+        .image-upload {
+            margin-bottom: 15px;
+        }
+        
+        .image-upload label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            margin-top: 10px;
+            display: none;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #ddd;
+        }
+        
+        .posts-container {
+            margin-top: 30px;
+        }
+        
+        .post {
+            background-color: #fff;
+            color: #000;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+        
+        .post-content {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .post-image {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        
+        .author {
+            font-style: italic;
+        }
+        
+        .time-ago {
+            color: #888;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .post-form, .post {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ANOPOST</h1>
+            <p class="tagline">Share your thoughts anonymously</p>
+        </header>
+        
+        <div class="post-form">
+            <h2>Create a new post</h2>
+            <form id="create-post-form">
+                <textarea id="post-content" placeholder="What's on your mind?" required></textarea>
+                
+                <div class="image-upload">
+                    <label for="post-image">Add an image (optional):</label>
+                    <input type="file" id="post-image" accept="image/*">
+                    <img id="image-preview" class="image-preview" alt="Image preview">
+                </div>
+                
+                <button type="submit">Post Anonymously</button>
+            </form>
+        </div>
+        
+        <div class="posts-container" id="posts-container">
+            <div class="empty-state" id="empty-state">
+                <p>No posts yet. Be the first to share something!</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>ANOPOST &copy; 2023 | All posts are anonymous</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if posts exist in localStorage and load them
+            loadPosts();
+            
+            // Set up form submission
+            const postForm = document.getElementById('create-post-form');
+            postForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                createPost();
+            });
+            
+            // Set up image preview
+            const imageInput = document.getElementById('post-image');
+            const imagePreview = document.getElementById('image-preview');
+            
+            imageInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    
+                    reader.addEventListener('load', function() {
+                        imagePreview.src = reader.result;
+                        imagePreview.style.display = 'block';
+                    });
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+            });
+        });
+        
+        function createPost() {
+            const contentInput = document.getElementById('post-content');
+            const imageInput = document.getElementById('post-image');
+            
+            const content = contentInput.value.trim();
+            if (!content) return;
+            
+            // Create post object
+            const post = {
+                id: Date.now(),
+                content: content,
+                timestamp: new Date().toISOString(),
+                author: 'Anonymous'
+            };
+            
+            // Handle image if selected
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    post.image = e.target.result;
+                    savePost(post);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                savePost(post);
+            }
+        }
+        
+        function savePost(post) {
+            // Get existing posts from localStorage
+            const posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            
+            // Add new post
+            posts.unshift(post);
+            
+            // Save back to localStorage
+            localStorage.setItem('anopost_posts', JSON.stringify(posts));
+            
+            // Clear form
+            document.getElementById('create-post-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+            
+            // Reload posts
+            loadPosts();
+        }
+        
+        function loadPosts() {
+            const postsContainer = document.getElementById('posts-container');
+            const emptyState = document.getElementById('empty-state');
+            const posts = JSON.parse(localStorage.getItem('anopost_posts')) || [];
+            
+            // Clear posts container
+            postsContainer.innerHTML = '';
+            
+            if (posts.length === 0) {
+                postsContainer.appendChild(emptyState);
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            // Create HTML for each post
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post';
+                
+                let postHTML = `
+                    <div class="post-content">${escapeHTML(post.content)}</div>
+                `;
+                
+                if (post.image) {
+                    postHTML += `<img src="${post.image}" class="post-image" alt="Post image">`;
+                }
+                
+                postHTML += `
+                    <div class="post-meta">
+                        <span class="author">${post.author}</span>
+                        <span class="time-ago">${timeAgo(new Date(post.timestamp))}</span>
+                    </div>
+                `;
+                
+                postElement.innerHTML = postHTML;
+                postsContainer.appendChild(postElement);
+            });
+        }
+        
+        function timeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'just now';
+            }
+            
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) {
+                return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) {
+                return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) {
+                return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInMonths = Math.floor(diffInDays / 30);
+            if (diffInMonths < 12) {
+                return `${diffInMonths} month${diffInMonths !== 1 ? 's' : ''} ago`;
+            }
+            
+            const diffInYears = Math.floor(diffInMonths / 12);
+            return `${diffInYears} year${diffInYears !== 1 ? 's' : ''} ago`;
+        }
+        
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
