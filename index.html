@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANOPOST - Anonymous Posts</title>
+    <title>ANOPOST - Anonymous Global Posts</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
@@ -178,6 +178,19 @@
         
         .char-count.over-limit {
             color: #ff3333;
+        }
+        
+        .location-selector {
+            margin-bottom: 15px;
+        }
+        
+        .location-selector select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #333;
         }
         
         button {
@@ -366,12 +379,6 @@
             opacity: 1;
         }
         
-        .expiry-timer {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 5px;
-        }
-        
         .online-users {
             position: fixed;
             bottom: 20px;
@@ -466,16 +473,42 @@
             </div>
         </header>
         
-        <div class="post-form" id="post-form">
+        <div class="post-form expanded" id="post-form">
             <h2>
                 Create a new post
                 <button class="form-toggle" id="form-toggle">
-                    <i class="fas fa-chevron-down"></i>
+                    <i class="fas fa-chevron-up"></i>
                 </button>
             </h2>
             <form id="create-post-form">
                 <textarea id="post-content" placeholder="What's on your mind? (Max 500 characters)" maxlength="500" required></textarea>
                 <div class="char-count" id="char-count">0/500</div>
+                
+                <div class="location-selector">
+                    <select id="post-location">
+                        <option value="">Select your location</option>
+                        <option value="New York, USA">New York, USA</option>
+                        <option value="London, UK">London, UK</option>
+                        <option value="Tokyo, Japan">Tokyo, Japan</option>
+                        <option value="Paris, France">Paris, France</option>
+                        <option value="Sydney, Australia">Sydney, Australia</option>
+                        <option value="Berlin, Germany">Berlin, Germany</option>
+                        <option value="Mumbai, India">Mumbai, India</option>
+                        <option value="São Paulo, Brazil">São Paulo, Brazil</option>
+                        <option value="Toronto, Canada">Toronto, Canada</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="Dubai, UAE">Dubai, UAE</option>
+                        <option value="Seoul, South Korea">Seoul, South Korea</option>
+                        <option value="Mexico City, Mexico">Mexico City, Mexico</option>
+                        <option value="Moscow, Russia">Moscow, Russia</option>
+                        <option value="Cairo, Egypt">Cairo, Egypt</option>
+                        <option value="Bangkok, Thailand">Bangkok, Thailand</option>
+                        <option value="Barcelona, Spain">Barcelona, Spain</option>
+                        <option value="Amsterdam, Netherlands">Amsterdam, Netherlands</option>
+                        <option value="Stockholm, Sweden">Stockholm, Sweden</option>
+                        <option value="Zurich, Switzerland">Zurich, Switzerland</option>
+                    </select>
+                </div>
                 
                 <div class="image-upload">
                     <input type="file" id="post-image" accept="image/*" hidden>
@@ -522,7 +555,7 @@
 
     <div class="online-users">
         <span class="online-dot"></span>
-        <span id="online-count">0</span> online now
+        <span id="online-count">1</span> online now
     </div>
 
     <div class="notification" id="notification">
@@ -533,6 +566,7 @@
         // Global variables to simulate server-like behavior
         const SERVER_KEY = 'anopost_global_server';
         const USER_KEY = 'anopost_user_id';
+        const SESSION_KEY = 'anopost_session';
         
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the application
@@ -553,12 +587,18 @@
                     posts: [],
                     stats: {
                         totalPosts: 0,
-                        totalUsers: 1
-                    }
+                        totalUsers: 0
+                    },
+                    sessions: {}
                 }));
             }
             
-            // Update online users count (simulated)
+            // Create or update user session
+            const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem(SESSION_KEY, sessionId);
+            updateUserSession(sessionId);
+            
+            // Update online users count
             updateOnlineUsers();
             
             // Check if posts exist in global server and load them
@@ -665,23 +705,45 @@
             
             // Set up interval to check for new posts and update stats
             setInterval(function() {
+                updateUserSession(localStorage.getItem(SESSION_KEY));
                 loadPosts();
                 updateStats();
                 updateOnlineUsers();
-            }, 10000); // Check every 10 seconds
+            }, 5000); // Check every 5 seconds
             
             // Simulate other users adding posts occasionally
-            setInterval(simulateOtherUserPost, 30000);
+            setInterval(simulateOtherUserPost, 15000);
+        }
+        
+        function updateUserSession(sessionId) {
+            const serverData = JSON.parse(localStorage.getItem(SERVER_KEY));
+            serverData.sessions[sessionId] = Date.now();
+            
+            // Remove sessions older than 5 minutes
+            for (const [key, timestamp] of Object.entries(serverData.sessions)) {
+                if (Date.now() - timestamp > 300000) { // 5 minutes
+                    delete serverData.sessions[key];
+                }
+            }
+            
+            localStorage.setItem(SERVER_KEY, JSON.stringify(serverData));
         }
         
         function createPost() {
             const contentInput = document.getElementById('post-content');
             const imageInput = document.getElementById('post-image');
+            const locationInput = document.getElementById('post-location');
             const submitBtn = document.getElementById('submit-btn');
             
             const content = contentInput.value.trim();
             if (!content) {
                 showNotification('Please write something to post');
+                return;
+            }
+            
+            const location = locationInput.value;
+            if (!location) {
+                showNotification('Please select a location');
                 return;
             }
             
@@ -691,14 +753,14 @@
             
             // Create post object
             const post = {
-                id: Date.now(),
+                id: Date.now() + Math.floor(Math.random() * 1000),
                 content: content,
                 timestamp: new Date().toISOString(),
                 author: 'Anonymous',
                 userId: localStorage.getItem(USER_KEY),
                 likes: 0,
-                liked: false,
-                location: 'Unknown location' // Simulated location
+                likedBy: [],
+                location: location
             };
             
             // Handle image if selected
@@ -766,7 +828,8 @@
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();
                 posts = posts.filter(post => 
-                    post.content.toLowerCase().includes(term)
+                    post.content.toLowerCase().includes(term) || 
+                    post.location.toLowerCase().includes(term)
                 );
             }
             
@@ -808,6 +871,9 @@
             
             // Create HTML for each post
             posts.forEach(post => {
+                const currentUserId = localStorage.getItem(USER_KEY);
+                const isLiked = post.likedBy.includes(currentUserId);
+                
                 const postElement = document.createElement('div');
                 postElement.className = 'post';
                 postElement.dataset.id = post.id;
@@ -815,7 +881,7 @@
                 let postHTML = `
                     <div class="post-header">
                         <div class="post-origin">
-                            <i class="fas fa-globe-americas"></i>
+                            <i class="fas fa-map-marker-alt"></i>
                             ${post.location}
                         </div>
                     </div>
@@ -832,7 +898,7 @@
                         <span class="time-ago">${timeAgo(new Date(post.timestamp))}</span>
                     </div>
                     <div class="post-actions">
-                        <button class="action-btn like-btn ${post.liked ? 'liked' : ''}" data-id="${post.id}">
+                        <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" data-id="${post.id}">
                             <i class="fas fa-heart"></i> <span class="like-count">${post.likes}</span>
                         </button>
                         <button class="action-btn copy-btn" data-content="${escapeHTML(post.content)}">
@@ -848,7 +914,7 @@
             // Add event listeners for like buttons
             document.querySelectorAll('.like-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const postId = parseInt(this.dataset.id);
+                    const postId = this.dataset.id;
                     likePost(postId);
                 });
             });
@@ -866,17 +932,21 @@
         
         function likePost(postId) {
             const serverData = JSON.parse(localStorage.getItem(SERVER_KEY));
-            const postIndex = serverData.posts.findIndex(post => post.id === postId);
+            const postIndex = serverData.posts.findIndex(post => post.id == postId);
             
             if (postIndex !== -1) {
                 const post = serverData.posts[postIndex];
+                const currentUserId = localStorage.getItem(USER_KEY);
+                const likeIndex = post.likedBy.indexOf(currentUserId);
                 
-                if (post.liked) {
-                    post.likes--;
-                    post.liked = false;
-                } else {
+                if (likeIndex === -1) {
+                    // Like the post
                     post.likes++;
-                    post.liked = true;
+                    post.likedBy.push(currentUserId);
+                } else {
+                    // Unlike the post
+                    post.likes--;
+                    post.likedBy.splice(likeIndex, 1);
                 }
                 
                 localStorage.setItem(SERVER_KEY, JSON.stringify(serverData));
@@ -887,7 +957,7 @@
                 
                 likeCount.textContent = post.likes;
                 
-                if (post.liked) {
+                if (likeIndex === -1) {
                     likeBtn.classList.add('liked');
                 } else {
                     likeBtn.classList.remove('liked');
@@ -903,19 +973,19 @@
         
         function updateStats() {
             const serverData = JSON.parse(localStorage.getItem(SERVER_KEY));
-            document.getElementById('total-posts').textContent = serverData.stats.totalPosts;
+            document.getElementById('total-posts').textContent = serverData.posts.length;
         }
         
         function updateOnlineUsers() {
-            // Simulate online users count (random between 50-500)
-            const onlineCount = Math.floor(Math.random() * 451) + 50;
+            const serverData = JSON.parse(localStorage.getItem(SERVER_KEY));
+            const onlineCount = Object.keys(serverData.sessions).length;
             document.getElementById('online-count').textContent = onlineCount;
             document.getElementById('total-users').textContent = onlineCount;
         }
         
         function simulateOtherUserPost() {
-            // 20% chance of a simulated post
-            if (Math.random() < 0.2) {
+            // 30% chance of a simulated post
+            if (Math.random() < 0.3) {
                 const serverData = JSON.parse(localStorage.getItem(SERVER_KEY));
                 
                 // Sample posts from around the world
@@ -927,19 +997,21 @@
                     { content: "Sushi breakfast in Tokyo. When in Rome! 🍣", location: "Tokyo, Japan" },
                     { content: "The northern lights are breathtaking tonight! 🌌", location: "Reykjavik, Iceland" },
                     { content: "Beach day in Rio! The waves are amazing today. 🏄", location: "Rio de Janeiro, Brazil" },
-                    { content: "Hiking in the mountains. The air is so fresh here! 🏔️", location: "Swiss Alps" }
+                    { content: "Hiking in the mountains. The air is so fresh here! 🏔️", location: "Swiss Alps" },
+                    { content: "Just finished my latest project. Feeling accomplished! 💻", location: "San Francisco, USA" },
+                    { content: "The food market here is incredible. So many flavors! 🍜", location: "Bangkok, Thailand" }
                 ];
                 
                 const randomPost = samplePosts[Math.floor(Math.random() * samplePosts.length)];
                 
                 const newPost = {
-                    id: Date.now() + Math.floor(Math.random() * 1000), // Ensure unique ID
+                    id: Date.now() + Math.floor(Math.random() * 1000),
                     content: randomPost.content,
                     timestamp: new Date().toISOString(),
                     author: 'Anonymous',
                     userId: 'user_' + Math.random().toString(36).substr(2, 9),
                     likes: Math.floor(Math.random() * 20),
-                    liked: false,
+                    likedBy: [],
                     location: randomPost.location
                 };
                 
